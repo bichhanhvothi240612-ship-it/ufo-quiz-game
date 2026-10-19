@@ -3,7 +3,7 @@ import random
 import string
 import streamlit as st
 import streamlit.components.v1 as components
-
+from streamlit_autorefresh import st_autorefresh
 from supabase import create_client
 
 st.set_page_config(
