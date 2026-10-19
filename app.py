@@ -1,344 +1,346 @@
-
-import random
-import string
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 from supabase import create_client
+import uuid
+import random
+import string
+import html
 
 st.set_page_config(
-    page_title="UFO TRÍ NÃO",
+    page_title="UFO TRI NÃO",
     page_icon="🛸",
-    layout="wide"
+    layout="centered"
 )
 
+# ---------- GIAO DIỆN ----------
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #c9f2ff, #fce0f2, #e4ffd9);
+    background:
+        radial-gradient(ellipse at top, #243b72 0%, transparent 55%),
+        linear-gradient(145deg, #080d25, #171044, #071b35);
+    color: white;
 }
-h1 {
-    color: #7550c8;
-    text-align: center;
-    font-weight: 900;
-}
-.block-container {
-    max-width: 1000px;
+h1, h2, h3, p, label {
+    color: white !important;
 }
 .stButton button {
-    background: #8967e8;
-    color: white;
+    width: 100%;
+    min-height: 46px;
     border-radius: 14px;
     font-weight: bold;
-    border: 2px solid white;
-    min-height: 44px;
+}
+div[data-testid="stForm"] {
+    border: 1px solid #5966a8;
+    border-radius: 16px;
+    padding: 16px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🛸 UFO TRÍ NÃO")
 st.markdown(
-    "<h3 style='text-align:center'>👽 Ai là cao thủ kiến thức?</h3>",
+    "<h1 style='text-align:center'>🛸 UFO TRI NÃO</h1>"
+    "<p style='text-align:center'>🌌 Chinh phục vũ trụ tri thức!</p>",
     unsafe_allow_html=True
 )
 
-# Nhạc nền tổng hợp
-components.html("""
-<button id="music" style="padding:10px 18px;border:0;
-border-radius:12px;background:#8065d7;color:white;font-weight:bold">
-🎵 Bật / tắt nhạc nền
-</button>
-<script>
-let audio = null, timer = null, on = false, i = 0;
-let notes = [523,659,784,659,587,698,880,698];
-document.getElementById("music").onclick = async function() {
-    if (!audio) audio = new AudioContext();
-    await audio.resume();
-    on = !on;
-    if (on) {
-        timer = setInterval(() => {
-            let osc = audio.createOscillator();
-            let gain = audio.createGain();
-            osc.frequency.value = notes[i++ % notes.length];
-            gain.gain.value = 0.025;
-            osc.connect(gain);
-            gain.connect(audio.destination);
-            osc.start();
-            osc.stop(audio.currentTime + 0.15);
-        }, 250);
-        this.innerText = "🔇 Tắt nhạc nền";
-    } else {
-        clearInterval(timer);
-        this.innerText = "🎵 Bật nhạc nền";
-    }
-};
-</script>
-""", height=60)
-
-QUESTIONS = [
-    {
-        "q": "Giải phương trình x² - 5x + 6 = 0.",
-        "a": ["x = 2 hoặc x = 3", "x = 1", "x = 6", "Vô nghiệm"],
-        "correct": 0,
-        "explain": "(x - 2)(x - 3) = 0 nên x = 2 hoặc x = 3."
-    },
-    {
-        "q": "Theo Vi-ét, tổng hai nghiệm của x² - 7x + 10 = 0 là?",
-        "a": ["10", "-7", "7", "-10"],
-        "correct": 2,
-        "explain": "Tổng hai nghiệm bằng -b/a = 7."
-    },
-    {
-        "q": "Tam giác vuông có hai cạnh góc vuông 6 và 8. Cạnh huyền là?",
-        "a": ["9", "10", "12", "14"],
-        "correct": 1,
-        "explain": "Cạnh huyền = √(6² + 8²) = 10."
-    },
-    {
-        "q": "She has lived here ___ 2020.",
-        "a": ["for", "since", "during", "at"],
-        "correct": 1,
-        "explain": "Since đi với mốc thời gian."
-    },
-    {
-        "q": "Đơn vị đo cường độ dòng điện là gì?",
-        "a": ["Vôn", "Oát", "Ampe", "Jun"],
-        "correct": 2,
-        "explain": "Cường độ dòng điện đo bằng ampe (A)."
-    },
-    {
-        "q": "Nếu 20% của một số bằng 18, số đó là?",
-        "a": ["36", "72", "90", "100"],
-        "correct": 2,
-        "explain": "18 ÷ 0,2 = 90."
-    },
-    {
-        "q": "Thủ đô Nhật Bản là thành phố nào?",
-        "a": ["Kyoto", "Osaka", "Tokyo", "Nagoya"],
-        "correct": 2,
-        "explain": "Thủ đô Nhật Bản là Tokyo."
-    },
-    {
-        "q": "Một giờ có bao nhiêu phút?",
-        "a": ["30", "45", "60", "100"],
-        "correct": 2,
-        "explain": "Một giờ có 60 phút."
-    },
-    {
-        "q": "Nếu x - y = 4 và x + y = 10 thì x bằng?",
-        "a": ["3", "5", "7", "14"],
-        "correct": 2,
-        "explain": "Cộng hai phương trình: 2x = 14, x = 7."
-    },
-    {
-        "q": "Từ trái nghĩa với generous là gì?",
-        "a": ["Kind", "Helpful", "Selfish", "Friendly"],
-        "correct": 2,
-        "explain": "Generous là hào phóng; selfish là ích kỷ."
-    }
-]
-
-# Kết nối cơ sở dữ liệu
+# ---------- KẾT NỐI SUPABASE ----------
 try:
-    db = create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_ANON_KEY"]
-    )
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    db = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception:
     st.error(
-        "Bạn cần cài Supabase và thêm SUPABASE_URL, "
-        "SUPABASE_ANON_KEY trong Streamlit Secrets."
+        "Chưa kết nối Supabase. Hãy thiết lập "
+        "SUPABASE_URL và SUPABASE_KEY trong Streamlit Secrets."
     )
     st.stop()
 
-if "player_id" not in st.session_state:
-    st.session_state.player_id = "".join(
-        random.choices(string.ascii_lowercase + string.digits, k=12)
-    )
+# ---------- NHẠC NỀN ----------
+music_url = st.secrets.get("MUSIC_URL", "")
 
-if "room" not in st.session_state:
-    st.session_state.room = ""
+if music_url:
+    st.caption("🎵 Nhạc nền vũ trụ — nhấn Play để nghe.")
+    st.audio(music_url, format="audio/mp3", loop=True)
+else:
+    st.caption("🎵 Có thể thêm đường dẫn nhạc MP3 trong Streamlit Secrets.")
+
+# ---------- CÂU HỎI ----------
+QUESTIONS = [
+    {
+        "q": "Hành tinh nào gần Mặt Trời nhất?",
+        "options": ["Sao Kim", "Sao Thủy", "Trái Đất", "Sao Hỏa"],
+        "answer": "Sao Thủy"
+    },
+    {
+        "q": "Hành tinh nào được gọi là hành tinh đỏ?",
+        "options": ["Sao Hỏa", "Sao Mộc", "Sao Thổ", "Sao Kim"],
+        "answer": "Sao Hỏa"
+    },
+    {
+        "q": "Mặt Trăng là gì?",
+        "options": [
+            "Một ngôi sao",
+            "Một thiên hà",
+            "Vệ tinh tự nhiên của Trái Đất",
+            "Một hành tinh"
+        ],
+        "answer": "Vệ tinh tự nhiên của Trái Đất"
+    },
+    {
+        "q": "Hành tinh lớn nhất Hệ Mặt Trời là gì?",
+        "options": ["Trái Đất", "Sao Mộc", "Sao Hải Vương", "Sao Thủy"],
+        "answer": "Sao Mộc"
+    },
+    {
+        "q": "Mặt Trời thuộc loại thiên thể nào?",
+        "options": ["Hành tinh", "Vệ tinh", "Ngôi sao", "Thiên thạch"],
+        "answer": "Ngôi sao"
+    },
+    {
+        "q": "Con người sống trên hành tinh nào?",
+        "options": ["Sao Kim", "Sao Hỏa", "Trái Đất", "Sao Mộc"],
+        "answer": "Trái Đất"
+    },
+    {
+      "q": "Ai là người đầu tiên đặt chân lên Mặt Trăng?",
+        "options": [
+            "Neil Armstrong",
+            "Albert Einstein",
+            "Yuri Gagarin",
+            "Galileo Galilei"
+        ],
+        "answer": "Neil Armstrong"
+    },
+    {
+        "q": "Hành tinh nào nổi tiếng với hệ vành đai?",
+        "options": ["Sao Thổ", "Sao Thủy", "Trái Đất", "Sao Hỏa"],
+        "answer": "Sao Thổ"
+    },
+    {
+        "q": "Ánh sáng Mặt Trời đến Trái Đất mất khoảng bao lâu?",
+        "options": ["8 phút 20 giây", "1 giây", "1 giờ", "24 giờ"],
+        "answer": "8 phút 20 giây"
+    },
+    {
+        "q": "Thiên hà chứa Hệ Mặt Trời có tên là gì?",
+        "options": ["Tiên Nữ", "Dải Ngân Hà", "Tam Giác", "Mây Magellan"],
+        "answer": "Dải Ngân Hà"
+    }
+]
+
+if "player_id" not in st.session_state:
+    st.session_state.player_id = str(uuid.uuid4())
+
+if "room_code" not in st.session_state:
+    st.session_state.room_code = ""
+
+if "is_host" not in st.session_state:
+    st.session_state.is_host = False
+
+player_id = st.session_state.player_id
+
 
 def get_room(code):
-    data = db.table("rooms").select("*").eq(
-        "room_code", code
-    ).execute().data
-    return data[0] if data else None
+    result = (
+        db.table("game_rooms")
+        .select("*")
+        .eq("code", code)
+        .limit(1)
+        .execute()
+    )
+    return result.data[0] if result.data else None
+
 
 def get_players(code):
-    data = db.table("players").select("*").eq(
-        "room_code", code
-    ).execute().data
-    return sorted(data, key=lambda p: -p["score"])
+    result = (
+        db.table("game_players")
+        .select("*")
+        .eq("room_code", code)
+        .order("score", desc=True)
+        .execute()
+    )
+    return result.data
+
 
 def create_room():
-    code = "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=5)
-    )
-    db.table("rooms").insert({
-        "room_code": code,
-        "status": "waiting",
-        "q_index": 0
+    code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    selected = random.sample(QUESTIONS, len(QUESTIONS))
+
+    db.table("game_rooms").insert({
+        "code": code,
+        "host_id": player_id,
+        "status": "lobby",
+        "current_q": 0,
+        "questions": selected
     }).execute()
-    st.session_state.room = code
-    st.session_state.role = "host"
-    st.rerun()
 
-def join_room(code, name):
-    code = code.strip().upper()
-    if not name.strip():
-        st.error("Hãy nhập tên của bạn.")
-        return
-
-    room = get_room(code)
-    if not room:
-        st.error("Mã phòng không tồn tại.")
-        return
-
-    players = get_players(code)
-    old = [
-        p for p in players
-        if p["player_id"] == st.session_state.player_id
-    ]
-
-    if not old and len(players) >= 100:
-        st.error("Phòng đã đủ 100 người chơi.")
-        return
-
-    db.table("players").upsert({
+    db.table("game_players").insert({
+        "id": player_id,
         "room_code": code,
-        "player_id": st.session_state.player_id,
-        "name": name.strip()[:24],
+        "name": "Chủ phòng",
         "score": 0,
-        "answered_q": -1
+        "answers": {}
     }).execute()
 
-    st.session_state.room = code
-    st.session_state.role = "player"
-    st.rerun()
+    st.session_state.room_code = code
+    st.session_state.is_host = True
 
-if not st.session_state.room:
-    tab1, tab2 = st.tabs(["🧑‍🏫 Tạo phòng", "🧑‍🎓 Vào phòng"])
 
-    with tab1:
-        st.write("Tạo phòng và chia sẻ mã cho bạn bè.")
-        if st.button("🚀 TẠO PHÒNG MỚI"):
+# ---------- TẠO PHÒNG / THAM GIA ----------
+if not st.session_state.room_code:
+    st.subheader("🚀 Bắt đầu cuộc phiêu lưu")
+
+    with st.form("create_form"):
+        st.write("Tạo phòng mới để làm chủ trò chơi.")
+        create_clicked = st.form_submit_button("🌟 TẠO PHÒNG")
+        if create_clicked:
             create_room()
+            st.rerun()
 
-    with tab2:
-        code = st.text_input("Mã phòng").upper()
-        name = st.text_input("Tên người chơi")
-        if st.button("🛸 VÀO PHÒNG"):
-            join_room(code, name)
+    st.divider()
 
+    with st.form("join_form"):
+        name = st.text_input("Tên người chơi", max_chars=20)
+        code_input = st.text_input(
+            "Mã phòng gồm 6 ký tự",
+            max_chars=6
+        ).strip().upper()
+
+        join_clicked = st.form_submit_button("🛸 THAM GIA PHÒNG")
+
+        if join_clicked:
+            if not name.strip() or not code_input:
+                st.warning("Nhập tên và mã phòng trước nha!")
+            else:
+                room = get_room(code_input)
+
+                if not room:
+                    st.error("Không tìm thấy phòng này.")
+                elif room["status"] == "finished":
+                    st.error("Phòng đã kết thúc.")
+                else:
+                    players = get_players(code_input)
+
+                    if len(players) >= 100:
+                        st.error("Phòng đã đủ 100 người!")
+                    else:
+                        db.table("game_players").insert({
+                            "id": player_id,
+                            "room_code": code_input,
+                            "name": name.strip(),
+                            "score": 0,
+                            "answers": {}
+                        }).execute()
+
+                        st.session_state.room_code = code_input
+                        st.session_state.is_host = False
+                        st.rerun()
+
+# ---------- PHÒNG CHƠI ----------
 else:
-    code = st.session_state.room
-    st_autorefresh(interval=4000, key="refresh")
-
+    code = st.session_state.room_code
     room = get_room(code)
+
     if not room:
-        st.error("Không tìm thấy phòng.")
+        st.error("Phòng không còn tồn tại.")
+        if st.button("Quay lại"):
+            st.session_state.room_code = ""
+            st.rerun()
         st.stop()
 
     players = get_players(code)
-    me = next(
-        (p for p in players
-         if p["player_id"] == st.session_state.player_id),
-        None
-    )
 
-    st.subheader(f"🏙️ Mã phòng: {code}")
-    col1, col2 = st.columns(2)
-    col1.metric("👥 Người chơi", f"{len(players)}/100")
-    col2.metric("⭐ Điểm của bạn", me["score"] if me else 0)
+    st.markdown(f"### 🔑 Mã phòng: `{code}`")
+    st.write(f"👥 Người chơi: **{len(players)}/100**")
+    st.caption("Gửi mã phòng cho bạn bè để cùng tham gia.")
 
-    if room["status"] == "waiting":
-        st.info("Đang chờ quản trò bắt đầu.")
+    if room["status"] == "lobby":
+        st.subheader("🌌 Phòng chờ")
 
-        if st.session_state.role == "host":
-            if st.button("▶️ BẮT ĐẦU"):
-                db.table("rooms").update({
+        for p in players:
+            st.write("👨‍🚀 " + html.escape(p["name"]))
+
+        if st.session_state.is_host:
+            if st.button("🚀 BẮT ĐẦU TRÒ CHƠI"):
+                db.table("game_rooms").update({
                     "status": "playing",
-                    "q_index": 0
-                }).eq("room_code", code).execute()
-                st.rerun()
-
-    elif room["status"] == "playing":
-        qi = room["q_index"]
-
-        if qi >= len(QUESTIONS):
-            if st.session_state.role == "host":
-                db.table("rooms").update({
-                    "status": "finished"
-                }).eq("room_code", code).execute()
+                    "current_q": 0
+                }).eq("code", code).execute()
                 st.rerun()
         else:
-            q = QUESTIONS[qi]
-            st.markdown(f"## 👽 Câu {qi + 1}")
-            st.write(q["q"])
+            st.info("Đợi chủ phòng bắt đầu nha!")
 
-            if st.session_state.role == "host":
-                answered = sum(
-                    p["answered_q"] == qi for p in players
+    elif room["status"] == "playing":
+        questions = room["questions"]
+        q_index = room["current_q"]
+
+        if q_index >= len(questions):
+            st.info("Đang cập nhật kết quả...")
+            st.stop()
+
+        question = questions[q_index]
+        answers = next(
+            (p.get("answers") or {} for p in players if p["id"] == player_id),
+            {}
+        )
+
+        st.progress((q_index + 1) / len(questions))
+        st.subheader(f"🪐 Câu {q_index + 1}/{len(questions)}")
+        st.markdown(f"### {question['q']}")
+
+        answer_key = str(q_index)
+
+        if answer_key in answers:
+            st.success("✅ M đã trả lời câu này rồi!")
+        else:
+            with st.form(f"answer_form_{q_index}"):
+                choice = st.radio(
+                    "Chọn đáp án:",
+                    question["options"]
                 )
-                st.write(f"Đã trả lời: {answered}/{len(players)}")
+                submitted = st.form_submit_button("✨ GỬI ĐÁP ÁN")
 
-                if st.button("➡️ CÂU TIẾP THEO"):
-                    db.table("rooms").update({
-                        "q_index": qi + 1
-                    }).eq("room_code", code).execute()
+                if submitted:
+                    me = next(
+                        (p for p in players if p["id"] == player_id),
+                        None
+                    )
+
+                    if me and answer_key not in (me.get("answers") or {}):
+                        new_answers = dict(me.get("answers") or {})
+                        new_answers[answer_key] = choice
+
+                        new_score = me["score"]
+                        if choice == question["answer"]:
+                            new_score += 1
+
+                        db.table("game_players").update({
+                            "answers": new_answers,
+                            "score": new_score
+                        }).eq("id", player_id).execute()
+
                     st.rerun()
 
-            elif me and me["answered_q"] == qi:
-                st.success("Bạn đã trả lời. Chờ câu tiếp theo nhé!")
+        answered_count = sum(
+            1 for p in players
+            if answer_key in (p.get("answers") or {})
+        )
 
-            else:
-                answer = st.radio("Chọn đáp án:", q["a"])
+        st.write(f"📊 Đã trả lời: {answered_count}/{len(players)} người")
 
-                if st.button("📨 GỬI ĐÁP ÁN"):
-                    fresh = db.table("players").select("*").eq(
-                        "room_code", code
-                    ).eq(
-                        "player_id", st.session_state.player_id
-                    ).execute().data
+        if st.session_state.is_host:
+            st.divider()
+            if st.button("➡️ CÂU TIẾP THEO"):
+                if q_index + 1 < len(questions):
+                    db.table("game_rooms").update({
+                        "current_q": q_index + 1
+                    }).eq("code", code).execute()
+                else:
+                    db.table("game_rooms").update({
+                        "status": "finished"
+                    }).eq("code", code).execute()
+                st.rerun()
 
-                    if fresh and fresh[0]["answered_q"] != qi:
-                        correct = q["a"].index(answer) == q["correct"]
-                        score = fresh[0]["score"] + (
-                            10 if correct else 0
-                        )
-
-                        db.table("players").update({
-                            "score": score,
-                            "answered_q": qi
-                        }).eq(
-                            "room_code", code
-                        ).eq(
-                            "player_id", st.session_state.player_id
-                        ).execute()
-
-                        if correct:
-                            st.success("🎉 Chính xác! +10 điểm.")
-                        else:
-                            st.error("Chưa đúng: " + q["explain"])
-
-                        st.rerun()
-
-    elif room["status"] == "finished":
-        st.balloons()
-        st.success("🏆 Trò chơi kết thúc!")
-
-    st.divider()
-    st.subheader("🏆 BẢNG XẾP HẠNG")
-
-    for i, p in enumerate(players[:100], 1):
-        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "👽"
-        st.write(f"{medal} {i}. **{p['name']}** — {p['score']} điểm")
-
-    if st.button("🚪 RỜI PHÒNG"):
-        st.session_state.room = ""
-        st.rerun()
-
-streamlit
-supabase
-streamlit-autorefresh
+        if st.button("🔄 Cập nhật màn hình"):
+        
