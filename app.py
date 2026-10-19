@@ -96,7 +96,7 @@ else:
     elif st.session_state.score == 2:
         st.info("👏 Khá tốt! M cố gắng thêm chút nữa nha!")
     else:
-st.warning("💪 Đừng nản lòng, thử lại lần nữa nhé!")
+        st.warning("💪 Đừng nản lòng, thử lại lần nữa nhé!")
 
     if st.button("🔄 Chơi lại", use_container_width=True):
         st.session_state.current_q = 0
