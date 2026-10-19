@@ -1,6 +1,6 @@
 st.markdown(f"<h3 style='text-align: center;'>Tổng điểm: {st.session_state.score}/{len(questions)}</h3>", unsafe_allow_html=True)
     
-    if st.session_state.score == 3:
+   if st.session_state.score == 3:
         st.balloons()
         st.success("🎉 Tuyệt vời! Bạn là nhà thám hiểm vũ trụ xuất sắc!")
     elif st.session_state.score == 2:
