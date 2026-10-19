@@ -1,415 +1,447 @@
 
+
 import streamlit as st
-import random
-import os
-import base64
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="UFO Khảo Bài",
-    page_icon="🛸",
+    page_icon="👽",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ---------- CÂU HỎI ----------
-QUESTION_BANK = [
-    {
-        "subject": "Toán",
-        "q": "Nghiệm của phương trình 2x + 4 = 10 là gì?",
-        "options": ["x = 2", "x = 3", "x = 4", "x = 7"],
-        "answer": 1,
-        "explain": "2x = 10 - 4 = 6 nên x = 3."
-    },
-    {
-        "subject": "Toán",
-        "q": "Căn bậc hai số học của 81 là bao nhiêu?",
-        "options": ["7", "8", "9", "10"],
-        "answer": 2,
-        "explain": "Vì 9² = 81 nên căn bậc hai số học của 81 là 9."
-    },
-    {
-        "subject": "Toán",
-        "q": "Nếu x + y = 10 và x = 4 thì y bằng bao nhiêu?",
-        "options": ["4", "5", "6", "14"],
-        "answer": 2,
-        "explain": "Thay x = 4 vào x + y = 10, ta được y = 6."
-    },
-    {
-        "subject": "Tiếng Anh",
-        "q": "Quá khứ của động từ 'go' là gì?",
-        "options": ["Goed", "Gone", "Went", "Going"],
-        "answer": 2,
-        "explain": "'Go' là động từ bất quy tắc, dạng quá khứ là 'went'."
-    },
-    {
-        "subject": "Tiếng Anh",
-        "q": "Từ nào có nghĩa là 'xinh đẹp'?",
-        "options": ["Beautiful", "Difficult", "Dangerous", "Careful"],
-        "answer": 0,
-        "explain": "'Beautiful' có nghĩa là xinh đẹp."
-    },
-    {
-        "subject": "Khoa học",
-        "q": "Hành tinh nào chúng ta đang sinh sống?",
-        "options": ["Sao Hỏa", "Trái Đất", "Sao Kim", "Sao Mộc"],
-        "answer": 1,
-        "explain": "Trái Đất là hành tinh nơi con người đang sinh sống."
-    },
-    {
-        "subject": "Khoa học",
-        "q": "Nước đóng băng ở khoảng bao nhiêu độ C?",
-        "options": ["0°C", "10°C", "50°C", "100°C"],
-        "answer": 0,
-        "explain": "Ở áp suất khí quyển tiêu chuẩn, nước tinh khiết đóng băng ở 0°C."
-    },
-    {
-        "subject": "Địa lý",
-        "q": "Việt Nam thuộc châu lục nào?",
-        "options": ["Châu Âu", "Châu Mỹ", "Châu Á", "Châu Phi"],
-        "answer": 2,
-        "explain": "Việt Nam nằm ở khu vực Đông Nam Á, thuộc châu Á."
-    },
-    {
-        "subject": "Lịch sử",
-        "q": "Ngày Quốc khánh Việt Nam là ngày nào?",
-        "options": ["30/4", "2/9", "19/5", "20/11"],
-        "answer": 1,
-        "explain": "Ngày Quốc khánh Việt Nam là ngày 2 tháng 9."
-    },
-    {
-        "subject": "Khoa học",
-        "q": "Cơ quan nào bơm máu đi khắp cơ thể?",
-        "options": ["Phổi", "Dạ dày", "Tim", "Gan"],
-        "answer": 2,
-        "explain": "Tim co bóp để bơm máu đi khắp cơ thể."
-    },
-]
+st.markdown("""
+<style>
+    #MainMenu, footer, header {visibility: hidden;}
+    .stApp {
+        background: linear-gradient(135deg, #d9f4ff, #fce4ff, #fff2d6);
+    }
+    .block-container {
+        padding: 1rem 0.5rem 0 !important;
+        max-width: 1200px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# ---------- TRẠNG THÁI GAME ----------
-if "game_questions" not in st.session_state:
-    st.session_state.game_questions = random.sample(
-        QUESTION_BANK, len(QUESTION_BANK)
-    )
-    st.session_state.current = 0
-    st.session_state.score = 0
-    st.session_state.answered = None
-    st.session_state.finished = False
-    st.session_state.started = False
-
-def restart_game():
-    st.session_state.game_questions = random.sample(
-        QUESTION_BANK, len(QUESTION_BANK)
-    )
-    st.session_state.current = 0
-    st.session_state.score = 0
-    st.session_state.answered = None
-    st.session_state.finished = False
-    st.session_state.started = True
-
-def choose_answer(index):
-    if st.session_state.answered is None:
-        st.session_state.answered = index
-        question = st.session_state.game_questions[
-            st.session_state.current
-        ]
-        if index == question["answer"]:
-            st.session_state.score += 1
-
-def next_question():
-    st.session_state.current += 1
-    st.session_state.answered = None
-    if st.session_state.current >= len(st.session_state.game_questions):
-        st.session_state.finished = True
-
-# ---------- HÌNH NỀN ----------
-background_css = """
-.stApp {
-    background:
-        radial-gradient(circle at 12% 18%, #ffffffb0 0 2px, transparent 3px),
-        radial-gradient(circle at 80% 24%, #fff8 0 2px, transparent 4px),
-        linear-gradient(180deg, #55c9ff 0%, #b9eaff 44%, #ffe4ba 100%);
-    background-size: 190px 150px, 230px 180px, cover;
-    color: #24365b;
+game_html = r"""
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: "Trebuchet MS", Arial, sans-serif;
+    background: #dff6ff;
+    color: #27354b;
 }
+button { font-family: inherit; cursor: pointer; }
+.game { max-width: 1100px; margin: auto; padding: 10px; }
+.topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+}
+.logo {
+    font-size: clamp(19px, 4vw, 28px); font-weight: 900;
+    color: #7652c9; text-shadow: 2px 2px #fff;
+}
+.stat {
+    background: white; border: 2px solid #e7ddff;
+    border-radius: 14px; padding: 8px 13px; font-weight: bold;
+    box-shadow: 0 4px 0 #d7c8f5;
+}
+.scene {
+    height: 440px; position: relative; overflow: hidden;
+    border: 4px solid white; border-radius: 22px;
+    background: linear-gradient(#b9eaff 0%, #e5f8ff 54%, #a5d9b6 55%, #80c5a2 100%);
+    box-shadow: 0 8px 0 #c9b9ee, 0 12px 25px #8b79b344;
+}
+.sun {
+    position:absolute; width:65px;height:65px;border-radius:50%;
+    background:#ffe88b; right:8%;top:20px;
+    box-shadow:0 0 35px #fff3a8;
+}
+.cloud {
+    position:absolute;top:45px;left:15%;font-size:42px;
+    opacity:.85; animation: cloudmove 18s linear infinite;
+}
+.cloud.two {top:90px;left:62%;animation-delay:-8s;font-size:32px;}
+@keyframes cloudmove {0%{transform:translateX(-40px)}50%{transform:translateX(35px)}100%{transform:translateX(-40px)}}
+.buildings {
+    position:absolute;left:0;right:0;bottom:155px;height:140px;
+    display:flex;align-items:flex-end;justify-content:space-around;gap:5px;
+}
+.shop {
+    height:100%;width:19%;position:relative;border:3px solid #fff;
+    border-radius:8px 8px 0 0;box-shadow:inset 0 -8px #0000000b;
+    text-align:center;font-size:clamp(10px,2vw,15px);font-weight:900;
+    padding-top:12px;color:#5b4264;
+}
+.shop:before {
+    content:"";position:absolute;left:-4px;right:-4px;top:35px;height:15px;
+    background:repeating-linear-gradient(90deg,#ffcf7b 0 22px,#fff1cb 22px 44px);
+    border:2px solid white;
+}
+.shop:after {
+    content:"";position:absolute;left:20%;right:20%;bottom:0;height:48px;
+    background:linear-gradient(90deg,#6da9d4 0 45%,#fff 45% 53%,#6da9d4 53%);
+    border:3px solid #fff;border-bottom:0;border-radius:5px 5px 0 0;
+}
+.shop span {position:relative;z-index:1;background:#fff8;padding:3px;border-radius:5px;}
+.s1{background:#ffd9a6}.s2{background:#ffb9cb}.s3{background:#c5edc8}.s4{background:#ffe4a6}.s5{background:#cbbdff}
+.tree {
+    position:absolute;bottom:145px;font-size:43px;z-index:2;
+}
+.tree.t1{left:3%}.tree.t2{right:3%}
+.sidewalk {
+    position:absolute;bottom:112px;width:100%;height:48px;
+    background:repeating-linear-gradient(90deg,#f5d6b9 0 65px,#eac4a5 65px 69px);
+    border-top:4px solid #fff5e7;border-bottom:4px solid #d3a98b;
+}
+.road {
+    position:absolute;bottom:0;width:100%;height:115px;
+    background:linear-gradient(#69788c,#4b5b73);
+    border-top:5px solid #f7f0d5;
+}
+.road:after {
+    content:"";position:absolute;top:51px;left:0;right:0;height:5px;
+    background:repeating-linear-gradient(90deg,#fff5cc 0 45px,transparent 45px 82px);
+}
+.lamp {
+    position:absolute;bottom:115px;font-size:38px;z-index:3;
+}
+.l1{left:12%}.l2{right:12%}
+.ufo {
+    position:absolute;z-index:8;top:13px;left:50%;
+    transform:translateX(-50%);font-size:66px;
+    filter:drop-shadow(0 5px 4px #7565a566);
+    transition:left 1s ease, top .8s ease;
+    animation: hover 2s ease-in-out infinite;
+}
+@keyframes hover {0%,100%{margin-top:0}50%{margin-top:9px}}
+.ufo-counter {
+    position:absolute;top:83px;left:50%;transform:translateX(-50%);
+    z-index:9;background:#263a48;color:#baffd4;border:3px solid #fff;
+    border-radius:7px;padding:2px 14px;font-weight:900;font-size:13px;
+}
+.beam {
+    display:none;position:absolute;z-index:6;top:88px;left:50%;
+    transform:translateX(-50%);
+    width:0;height:240px;
+    background:linear-gradient(180deg,#a6fff7aa,#b7f4ff22);
+    clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);
+    filter:drop-shadow(0 0 15px #b3fff9);
+}
+.beam.active {display:block;animation: beamflash .5s infinite alternate;}
+@keyframes beamflash {from{opacity:.45}to{opacity:1}}
+.student {
+    position:absolute;z-index:7;bottom:78px;left:var(--x);
+    transform:translateX(-50%);text-align:center;
+    transition:left 1.1s ease, bottom 1s ease, transform .5s;
+    animation: walk 1s ease-in-out infinite alternate;
+}
+@keyframes walk {from{margin-bottom:0}to{margin-bottom:4px}}
+.student .name {
+    display:block;white-space:nowrap;font-size:11px;font-weight:900;
+    background:white;border:1px solid #cfc5e9;border-radius:7px;
+    padding:3px 5px;margin-bottom:1px;box-shadow:0 2px 0 #c9c1df;
+}
+.student .person {font-size:36px;line-height:38px;display:block;}
+.student .ride {font-size:23px;line-height:20px;display:block;margin-top:-7px;}
+.student.captured {bottom:300px;transform:translateX(-50%) scale(.65);opacity:.2;}
+.student.selected .name {background:#fff29d;border-color:#ff9c49;}
+.hint {
+    text-align:center;font-size:14px;font-weight:bold;color:#67568b;
+    margin:10px 0;
+}
+.controls {display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px 0;}
+.btn {
+    border:0;border-radius:14px;padding:12px 19px;font-size:15px;
+    font-weight:900;box-shadow:0 5px 0 #0002;transition:transform .1s;
+}
+.btn:active {transform:translateY(3px);box-shadow:0 2px 0 #0002;}
+.primary {background:#8664e8;color:white;}
+.secondary {background:white;color:#65518f;border:2px solid #e0d6ff;}
+.note {text-align:center;color:#766a91;font-size:12px;margin:8px;}
+.modal {
+    display:none;position:absolute;inset:0;z-index:20;
+    background:#23334dbb;align-items:center;justify-content:center;padding:15px;
+}
+.modal.show {display:flex;}
+.card {
+    background:#fffdf9;width:min(480px,100%);border-radius:22px;
+    padding:20px;border:4px solid #fff;box-shadow:0 10px 0 #b4a1e0;
+    text-align:center;max-height:95%;overflow:auto;
+}
+.card h2 {margin:4px 0 10px;color:#7854c9;font-size:23px;}
+.question {font-size:18px;font-weight:900;line-height:1.4;margin:12px 0;}
+.answers {display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.answer {
+    background:#f0ebff;border:2px solid #d9cdfa;border-radius:12px;
+    padding:12px 7px;font-weight:bold;color:#45365f;font-size:14px;
+}
+.answer:hover {background:#e1d6ff;}
+.answer:disabled {cursor:default;opacity:1;}
+.answer.correct {background:#c9f7d6;border-color:#56c77c;}
+.answer.wrong {background:#ffd5d8;border-color:#ef7884;}
+.feedback {font-weight:bold;min-height:24px;margin:12px 0;}
+.next {background:#8664e8;color:white;width:100%;margin-top:5px;}
+.result-big {font-size:45px;}
+@media(max-width:550px) {
+    .scene{height:390px}
+    .buildings{height:112px;bottom:150px}
+    .shop{font-size:10px}
+    .sidewalk{bottom:110px}
+    .road{height:112px}
+    .student .person{font-size:29px}
+    .student .name{font-size:9px;padding:2px 3px}
+    .student .ride{font-size:19px}
+    .ufo{font-size:54px}
+    .ufo-counter{top:70px}
+    .beam{top:78px;height:220px}
+    .answers{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="game">
+  <div class="topbar">
+    <div class="logo">👽 UFO KHẢO BÀI</div>
+    <div class="stat">⭐ Điểm: <span id="score">0</span></div>
+    <div class="stat">🛸 Đã hỏi: <span id="round">0</span>/<span id="total">5</span></div>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="sun"></div>
+    <div class="cloud">☁️</div><div class="cloud two">☁️</div>
+    <div class="buildings">
+      <div class="shop s1"><span>🥖 BÁNH MÌ</span></div>
+      <div class="shop s2"><span>🧋 TRÀ SỮA</span></div>
+      <div class="shop s3"><span>📚 NHÀ SÁCH</span></div>
+      <div class="shop s4"><span>🍜 BÚN CHẢ</span></div>
+      <div class="shop s5"><span>🏪 TẠP HÓA</span></div>
+    </div>
+    <div class="tree t1">🌳</div><div class="tree t2">🌳</div>
+    <div class="sidewalk"></div>
+    <div class="lamp l1">💡</div><div class="lamp l2">💡</div>
+    <div class="road"></div>
+    <div class="ufo" id="ufo">🛸</div>
+    <div class="ufo-counter" id="ufoCounter">0 / 5</div>
+    <div class="beam" id="beam"></div>
+    <div id="students"></div>
+
+    <div class="modal show" id="intro">
+      <div class="card">
+        <div class="result-big">🛸👽</div>
+        <h2>UFO đến khảo bài!</h2>
+        <p>Người ngoài hành tinh đang tìm học sinh để hỏi bài. Bạn có trả lời được không?</p>
+        <p>🎯 Trả lời đúng: +10 điểm</p>
+        <button class="btn primary" onclick="startGame()">🚀 BẮT ĐẦU CHƠI</button>
+      </div>
+    </div>
+
+    <div class="modal" id="quizModal">
+      <div class="card">
+        <div class="result-big" id="quizEmoji">👩‍🎓</div>
+        <h2 id="quizTitle">Bạn được UFO chọn!</h2>
+        <div class="question" id="question"></div>
+        <div class="answers" id="answers"></div>
+        <div class="feedback" id="feedback"></div>
+        <button class="btn next" id="nextBtn" style="display:none" onclick="nextQuestion()">Tiếp tục ➜</button>
+      </div>
+    </div>
+
+    <div class="modal" id="endModal">
+      <div class="card">
+        <div class="result-big" id="endEmoji">🏆</div>
+        <h2>Hoàn thành buổi khảo bài!</h2>
+        <p id="endText"></p>
+        <button class="btn primary" onclick="resetGame()">🔄 CHƠI LẠI</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">Nhấn bắt đầu để xem UFO chọn học sinh nào nhé!</div>
+  <div class="controls">
+    <button class="btn primary" onclick="manualPick()">🛸 UFO chọn học sinh</button>
+    <button class="btn secondary" onclick="resetGame()">🔄 Chơi lại</button>
+  </div>
+  <div class="note">📚 Có thể dùng làm trò chơi ôn tập Toán, Tiếng Anh, Khoa học và nhiều môn học khác.</div>
+</div>
+
+<script>
+const studentsData = [
+  {name:"Minh Huy", emoji:"🧑🏻‍🎓", ride:"🛵", x:9},
+  {name:"Trúc Mai", emoji:"👧🏻", ride:"🛵", x:21},
+  {name:"Phương Mai", emoji:"👩🏻‍🎓", ride:"🛵", x:33},
+  {name:"Tuấn Minh", emoji:"👦🏻", ride:"🛵", x:45},
+  {name:"Quỳnh Anh", emoji:"👧🏼", ride:"🛵", x:57},
+  {name:"Huy Khánh", emoji:"🧑🏽‍🎓", ride:"🛵", x:69},
+  {name:"Mai Anh", emoji:"👩🏻", ride:"🛵", x:81},
+  {name:"Đăng An", emoji:"👦🏼", ride:"🛵", x:92}
+];
+
+const questions = [
+ {q:"Giải phương trình: 2x + 6 = 10. Giá trị x là bao nhiêu?", a:["x = 2","x = 3","x = 4","x = 8"], correct:0, explain:"2x = 10 − 6 = 4 nên x = 2."},
+ {q:"Trong tiếng Anh, “beautiful” có nghĩa là gì?", a:["Buồn bã","Xinh đẹp","Nhanh chóng","Thông minh"], correct:1, explain:"Beautiful nghĩa là xinh đẹp."},
+ {q:"Một tam giác có tổng ba góc bằng bao nhiêu?", a:["90°","180°","270°","360°"], correct:1, explain:"Tổng ba góc trong một tam giác bằng 180°."},
+ {q:"Từ nào sau đây là một động từ tiếng Anh?", a:["Beautiful","Happiness","Run","Blue"], correct:2, explain:"Run là động từ, có nghĩa là chạy."},
+ {q:"Nếu x² = 25 thì x có thể bằng những giá trị nào?", a:["Chỉ 5","Chỉ −5","5 hoặc −5","Chỉ 25"], correct:2, explain:"Cả 5² và (−5)² đều bằng 25."},
+ {q:"Thủ đô của Việt Nam là thành phố nào?", a:["Huế","Đà Nẵng","TP. Hồ Chí Minh","Hà Nội"], correct:3, explain:"Thủ đô của Việt Nam là Hà Nội."},
+ {q:"Phân số 1/2 viết dưới dạng số thập phân là gì?", a:["0,2","0,5","1,2","2,0"], correct:1, explain:"1 chia 2 bằng 0,5."},
+ {q:"Từ trái nghĩa với “hot” là gì?", a:["Warm","Cold","Tall","Fast"], correct:1, explain:"Cold có nghĩa là lạnh, trái nghĩa với hot."},
+ {q:"Nước đóng băng ở nhiệt độ bao nhiêu độ C trong điều kiện thông thường?", a:["0°C","10°C","50°C","100°C"], correct:0, explain:"Nước tinh khiết đóng băng ở khoảng 0°C trong điều kiện thông thường."},
+ {q:"Một giờ có bao nhiêu phút?", a:["30 phút","45 phút","60 phút","100 phút"], correct:2, explain:"Một giờ có 60 phút."}
+];
+
+let score = 0, round = 0, active = false, waiting = false;
+let remaining = [], currentStudent = null, currentQuestion = null, usedQuestions = [];
+const $ = id => document.getElementById(id);
+
+function renderStudents() {
+  $("students").innerHTML = "";
+  studentsData.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.className = "student";
+    el.id = "student" + i;
+    el.style.setProperty("--x", s.x + "%");
+    el.innerHTML = `<span class="name">${s.name}</span><span class="person">${s.emoji}</span><span class="ride">${s.ride}</span>`;
+    $("students").appendChild(el);
+  });
+}
+renderStudents();
+
+function updateStats() {
+  $("score").textContent = score;
+  $("round").textContent = round;
+  $("ufoCounter").textContent = round + " / 5";
+}
+function startGame() {
+  score = 0; round = 0; active = true; waiting = false;
+  remaining = studentsData.map((_,i)=>i);
+  usedQuestions = [];
+  $("intro").classList.remove("show");
+  $("endModal").classList.remove("show");
+  $("hint").textContent = "UFO đang bay quanh phố... nhấn nút để chọn một học sinh!";
+  renderStudents();
+  updateStats();
+  $("ufo").style.left = "50%";
+  $("ufo").style.top = "13px";
+}
+function manualPick() {
+  if (!active) {
+    $("intro").classList.add("show");
+    return;
+  }
+  if (waiting) return;
+  if (round >= 5 || remaining.length === 0) {
+    endGame();
+    return;
+  }
+  waiting = true;
+  const randomIndex = Math.floor(Math.random() * remaining.length);
+  const studentIndex = remaining.splice(randomIndex,1)[0];
+  currentStudent = studentIndex;
+  const studentEl = $("student" + studentIndex);
+  const s = studentsData[studentIndex];
+  studentEl.classList.add("selected");
+  $("hint").textContent = "🛸 UFO đang bay đến chỗ " + s.name + "!";
+  $("ufo").style.left = s.x + "%";
+  $("ufo").style.top = "35px";
+  $("beam").style.left = s.x + "%";
+  $("beam").classList.add("active");
+  setTimeout(() => {
+    $("beam").classList.remove("active");
+    studentEl.classList.add("captured");
+    $("hint").textContent = "✨ " + s.name + " được đưa lên UFO để khảo bài!";
+    setTimeout(showQuestion, 700);
+  }, 1100);
+}
+function showQuestion() {
+  if (!active) return;
+  round++;
+  updateStats();
+  let available = questions.map((_,i)=>i).filter(i=>!usedQuestions.includes(i));
+  if (available.length === 0) { usedQuestions=[]; available=questions.map((_,i)=>i); }
+  const qIndex = available[Math.floor(Math.random()*available.length)];
+  usedQuestions.push(qIndex);
+  currentQuestion = questions[qIndex];
+  $("quizEmoji").textContent = studentsData[currentStudent].emoji;
+  $("quizTitle").textContent = studentsData[currentStudent].name + " ơi, trả lời nhé!";
+  $("question").textContent = currentQuestion.q;
+  $("feedback").textContent = "";
+  $("nextBtn").style.display = "none";
+  $("answers").innerHTML = "";
+  currentQuestion.a.forEach((answer,i) => {
+    const btn = document.createElement("button");
+    btn.className = "answer";
+    btn.textContent = ["A. ","B. ","C. ","D. "][i] + answer;
+    btn.onclick = () => checkAnswer(i, btn);
+    $("answers").appendChild(btn);
+  });
+  $("quizModal").classList.add("show");
+}
+function checkAnswer(index, button) {
+  const buttons = [...$("answers").querySelectorAll("button")];
+  buttons.forEach(b => b.disabled = true);
+  if (index === currentQuestion.correct) {
+    button.classList.add("correct");
+    score += 10;
+    $("feedback").textContent = "🎉 Chính xác! +10 điểm";
+    $("feedback").style.color = "#21834a";
+  } else {
+    button.classList.add("wrong");
+    buttons[currentQuestion.correct].classList.add("correct");
+    $("feedback").textContent = "💡 Chưa đúng! " + currentQuestion.explain;
+    $("feedback").style.color = "#c44c61";
+  }
+  updateStats();
+  $("nextBtn").style.display = "block";
+}
+function nextQuestion() {
+  $("quizModal").classList.remove("show");
+  const studentEl = $("student" + currentStudent);
+  studentEl.classList.remove("selected","captured");
+  studentEl.style.opacity = "0.3";
+  $("ufo").style.left = "50%";
+  $("ufo").style.top = "13px";
+  waiting = false;
+  if (round >= 5 || remaining.length === 0) {
+    endGame();
+  } else {
+    $("hint").textContent = "Câu tiếp theo đang chờ! Nhấn “UFO chọn học sinh” nhé.";
+  }
+}
+function endGame() {
+  active = false;
+  waiting = false;
+  $("endEmoji").textContent = score >= 40 ? "🏆🎉" : score >= 20 ? "⭐😊" : "📚💪";
+  $("endText").textContent = "Bạn đạt " + score + " điểm sau " + round + " câu hỏi. " +
+    (score >= 40 ? "Xuất sắc! Bạn là cao thủ khảo bài!" :
+    score >= 20 ? "Làm tốt lắm! Ôn thêm một chút nhé!" :
+    "Đừng nản nhé, hãy ôn tập rồi thử lại!");
+  $("endModal").classList.add("show");
+  $("hint").textContent = "Buổi khảo bài đã kết thúc!";
+}
+function resetGame() {
+  $("intro").classList.remove("show");
+  $("quizModal").classList.remove("show");
+  $("endModal").classList.remove("show");
+  score = 0; round = 0; active = false; waiting = false;
+  remaining = []; usedQuestions = [];
+  renderStudents();
+  updateStats();
+  $("ufo").style.left = "50%";
+  $("ufo").style.top = "13px";
+  $("beam").classList.remove("active");
+  $("hint").textContent = "Nhấn BẮT ĐẦU CHƠI để bắt đầu buổi khảo bài!";
+  $("intro").classList.add("show");
+}
+</script>
+</body>
+</html>
 """
 
-# Nếu có ảnh background.png trong repository, dùng ảnh đó làm nền.
-if os.path.exists("background.png"):
-    with open("background.png", "rb") as f:
-        image_data = base64.b64encode(f.read()).decode()
-    background_css = f"""
-    .stApp {{
-        background-image:
-            linear-gradient(180deg, #10264a22, #10264a33),
-            url("data:image/png;base64,{image_data}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }}
-    """
-
-st.markdown(
-    f"""
-    <style>
-    {background_css}
-
-    #MainMenu, footer, header {{
-        visibility: hidden;
-    }}
-
-    .block-container {{
-        max-width: 1050px;
-        padding-top: 1.4rem;
-        padding-bottom: 3rem;
-    }}
-
-    .hero {{
-        text-align: center;
-        padding: 24px 16px;
-        border: 2px solid #ffffffcc;
-        border-radius: 28px;
-        background: linear-gradient(135deg, #ffffffd9, #e8f8ffd9);
-        box-shadow: 0 12px 35px #245b8b30;
-        animation: floaty 3s ease-in-out infinite;
-        margin-bottom: 20px;
-    }}
-
-    .hero h1 {{
-        color: #3949ab;
-        font-size: clamp(30px, 5vw, 48px);
-        margin: 0;
-        font-weight: 900;
-    }}
-
-    .hero p {{
-        color: #49658b;
-        font-size: 17px;
-        margin: 8px 0 0;
-    }}
-
-    .ufo {{
-        font-size: 54px;
-        display: inline-block;
-        animation: fly 3s ease-in-out infinite;
-    }}
-
-    .game-card {{
-        background: #ffffffed;
-        border: 2px solid #ffffff;
-        border-radius: 24px;
-        padding: 22px;
-        box-shadow: 0 12px 30px #214b6b25;
-        color: #24365b;
-        margin: 10px 0 16px;
-    }}
-
-    .tag {{
-        display: inline-block;
-        padding: 6px 13px;
-        background: #e4e9ff;
-        color: #4549a6;
-        border-radius: 30px;
-        font-weight: 800;
-        font-size: 13px;
-    }}
-
-    .question {{
-        font-size: clamp(20px, 3vw, 28px);
-        font-weight: 800;
-        line-height: 1.5;
-        color: #263b67;
-        margin-top: 14px;
-    }}
-
-    div.stButton > button {{
-        width: 100%;
-        min-height: 52px;
-        border-radius: 16px;
-        border: 2px solid #d9e6ff;
-        background: #ffffff;
-        color: #30456d;
-        font-size: 16px;
-        font-weight: 700;
-        transition: all .18s ease;
-    }}
-
-    div.stButton > button:hover {{
-        transform: translateY(-2px);
-        border-color: #858bff;
-        background: #f0f3ff;
-        color: #343c9a;
-        box-shadow: 0 6px 15px #5668a622;
-    }}
-
-    .feedback {{
-        border-radius: 16px;
-        padding: 15px 18px;
-        background: #effaf3;
-        border: 2px solid #bde8cb;
-        color: #245b3a;
-        margin: 12px 0;
-    }}
-
-    @keyframes floaty {{
-        0%, 100% {{ transform: translateY(0); }}
-        50% {{ transform: translateY(-5px); }}
-    }}
-
-    @keyframes fly {{
-        0%, 100% {{ transform: translateY(0) rotate(-3deg); }}
-        50% {{ transform: translateY(-10px) rotate(3deg); }}
-    }}
-
-    @media (max-width: 600px) {{
-        .block-container {{ padding: 1rem .7rem; }}
-        .hero {{ padding: 20px 10px; }}
-        .game-card {{ padding: 15px; }}
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ---------- TIÊU ĐỀ ----------
-st.markdown(
-    """
-    <div class="hero">
-        <div class="ufo">🛸</div>
-        <h1>UFO KHẢO BÀI</h1>
-        <p>👽 Người ngoài hành tinh đến thử thách kiến thức của bạn!</p>
-        <p>🏫 Thành phố học đường • 🚀 Học vui • ⭐ Tích điểm</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# ---------- MÀN HÌNH BẮT ĐẦU ----------
-if not st.session_state.started:
-    st.markdown(
-        """
-        <div class="game-card">
-            <h2>🌈 Sẵn sàng lên phi thuyền chưa?</h2>
-            <p>Trả lời 10 câu hỏi để trở thành nhà thám hiểm vũ trụ!</p>
-            <p>⭐ Mỗi câu đúng được 1 điểm.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.button(
-        "🚀 BẮT ĐẦU KHẢO BÀI",
-        type="primary",
-        on_click=restart_game,
-        use_container_width=True
-    )
-
-# ---------- ĐANG CHƠI ----------
-elif not st.session_state.finished:
-    i = st.session_state.current
-    question = st.session_state.game_questions[i]
-    total = len(st.session_state.game_questions)
-
-    st.progress(i / total, text=f"🚀 Tiến độ: câu {i + 1}/{total}")
-
-    a, b = st.columns(2)
-    a.metric("⭐ Điểm của bạn", st.session_state.score)
-    b.metric("🛸 Câu hỏi", f"{i + 1}/{total}")
-
-    st.markdown(
-        f"""
-        <div class="game-card">
-            <span class="tag">📚 {question["subject"]}</span>
-            <div class="question">
-                Câu {i + 1}: {question["q"]}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.write("### 👇 Chọn đáp án của bạn")
-
-    for start in range(0, len(question["options"]), 2):
-        cols = st.columns(2)
-        for offset in range(2):
-            idx = start + offset
-            if idx < len(question["options"]):
-                label = question["options"][idx]
-                cols[offset].button(
-                    f"{chr(65 + idx)}. {label}",
-                    key=f"q{i}_option{idx}",
-                    on_click=choose_answer,
-                    args=(idx,),
-                    disabled=st.session_state.answered is not None
-                )
-
-    if st.session_state.answered is not None:
-        if st.session_state.answered == question["answer"]:
-            st.success("🎉 Chính xác! Bạn nhận được 1 điểm.")
-            st.balloons()
-        else:
-            correct = question["options"][question["answer"]]
-            st.error(f"👽 Chưa đúng rồi! Đáp án đúng là: {correct}")
-
-        st.info(f"💡 Giải thích: {question['explain']}")
-
-        if i + 1 < total:
-            st.button(
-                "➡️ Câu tiếp theo",
-                type="primary",
-                on_click=next_question,
-                use_container_width=True
-            )
-        else:
-            st.button(
-                "🏁 Xem kết quả",
-                type="primary",
-                on_click=next_question,
-                use_container_width=True
-            )
-
-# ---------- KẾT QUẢ ----------
-else:
-    score = st.session_state.score
-    total = len(st.session_state.game_questions)
-    percent = score / total * 100
-
-    st.balloons()
-    st.markdown(
-        f"""
-        <div class="hero">
-            <div class="ufo">🏆</div>
-            <h1>HOÀN THÀNH NHIỆM VỤ!</h1>
-            <p>Bạn đã trở về Trái Đất an toàn!</p>
-            <h2 style="color:#3949ab">{score}/{total} điểm</h2>
-            <p>Độ chính xác: {percent:.0f}%</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    if score == total:
-        st.success("🌟 Tuyệt vời! Bạn là siêu sao tri thức vũ trụ!")
-    elif score >= 7:
-        st.success("🚀 Rất tốt! Bạn là nhà thám hiểm xuất sắc!")
-    elif score >= 5:
-        st.info("👏 Khá lắm! Ôn tập thêm để chinh phục vũ trụ nhé!")
-    else:
-        st.warning("💪 Đừng nản lòng! Chơi lại để luyện tập thêm nhé!")
-
-    st.button(
-        "🔄 CHƠI LẠI",
-        type="primary",
-        on_click=restart_game,
-        use_container_width=True
-    )
-
-st.markdown(
-    """
-    <p style="text-align:center;color:#344d70;font-weight:700;margin-top:25px">
-        🛸 UFO Khảo Bài • Học tập vui vẻ mỗi ngày 🌈
-    </p>
-    """,
-    unsafe_allow_html=True
-)
-
-
+components.html(game_html, height=700, scrolling=True)
