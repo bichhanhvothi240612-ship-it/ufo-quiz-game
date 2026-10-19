@@ -338,3 +338,7 @@ else:
     if st.button("🚪 RỜI PHÒNG"):
         st.session_state.room = ""
         st.rerun()
+
+streamlit
+supabase
+streamlit-autorefresh
